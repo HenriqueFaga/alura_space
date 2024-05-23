@@ -523,6 +523,250 @@ Aula 6 - Criando Repositorio no GitHub
 
 	Com isso, nao mandamos logs, banco sqlite, media, .pyc e diversos. e la tem o .env . nada do ambiente virtual venv/
 
+	Bom, agora vamos iniciar um git no repositorio local, para isso ctrl+C na aplicacao. Comando:
+
+		git init
+
+	Ele cria um diretorio .git com todas as ferramentas do git.
+
+	Para add all
+
+		git add .
+
+	Commit:
+
+		git commit -m 'projeto alura space'
+
+	Vamos no GitHub e pegamos a linha:
+
+		git remote add origin https://github.com/HenriqueFaga/alura_space.git
+
+
+	Para que o repositorio local aponte para o repositorio do GitHub.
+	E o comando abaixo para subir o commit por push:
+
+		git push origin master
+
+	master pois nao criamos uma branch, demos commit na master.
+
+
+Observações:
+
+	Geralmente temos um número vasto de aplicações e programas instalados na nossa máquina física. Muitas dessas ferramentas se conectam na internet e realizam comunicações com servidores distantes, trocando informações constantemente.
+
+	A partir do avanço dos computadores e da internet, houve a necessidade de organizar melhor o meio pelo qual determinadas aplicações contidas em cada máquina se comunicam.
+
+	Para essa tarefa, foi criado o Transmission Control Protocol (TCP) - Protocolo de Controle de Transmissão. Esse protocolo utiliza de artifícios chamados de Portas de Comunicação para gerenciar as trocas de informações de várias aplicações do sistema instaladas na mesma máquina física.
+
+	Aqui estão algumas das Portas de Comunicação mais conhecidas e suas atribuições:
+
+	Porta	Atribuição
+	80	HTTP
+	433	HTTPS
+	22	SSH
+	53	DNS
+	25	SMTP
+	465	SMTPS
+	20, 21	FTP
+	67, 68	DHCP
+
+Aula 7
+
+	App e Projeto
+
+		Para rodar uma pequena aplicação dentro do django:
+			django-admin startapp
+
+		Para começar todo o projeto em django, com todas as configurações:
+			django-admin startproject
+
+		Então um project pode conter diversos apps!
+
+		Vamos criar agora um App de galeria, todos os codigos relacionados as imagens que temos!
+
+		Para criar o app de galeria:
+
+			python manage.py startapp galeria
+
+		com isso, ele criou um diretorio galeria na raiz (DJango) com varios codigos:
+
+				DJango
+				|___venv
+					|____ bin (dir)
+					|____ lib (dir)
+					|____ pyvenv.cfg
+					|____ .gitignore
+				|____ setup
+					|____ __init__.py
+					|____ aspi.py
+					|____ settings.py
+					|____ urls.py
+					|____ wsgi.py
+				|____galeria
+					|____ migrations
+						|____ __init__.py
+					|____ __init__.py
+					|____ admin.py
+					|____ apps.py
+					|____ models.py
+					|____ tests.py
+					|____ views.py
+				|____.env
+				|____ manage.py
+				|____ requirements.txt
+
+		Vamos falar para o projeto que o app galeria faz parte dele. Para isso vamos em:
+
+				setup > settings.py
+
+			Dentro dele, escrever dentro da lista INSTALLED_APPS,
+			o nome da aplicação!
+
+				INSTALLED_APPS = [
+				    'django.contrib.admin',
+				    'django.contrib.auth',
+				    'django.contrib.contenttypes',
+				    'django.contrib.sessions',
+				    'django.contrib.messages',
+				    'django.contrib.staticfiles',
+				    'galeria',
+				]		
+
+
+Aula 8
+
+	Views e URLS
+
+		o arquivo galeria/views.py tem a responsabilidade principal de cuidar do que vai ser exibido na tela, em cada pagina, o que renderiza.
+
+		Abrindo o codigo, vamos importar o django.http para responder uma requisicao.
+
+			from django.http import HttpResponse
+
+		Ou seja, vem a resquisicao e eu quero responder ela.
+
+		Vamos criar uma função index, ou seja, a pagina principal. E para responder a requisição vamos passar como argumento 'request'. Restornamos um HTML na resposta!
+
+			def index(request):
+				return HttpResponse('<h1>Alura Space</h1>')
+
+		Codigo total em galeria/views.py:
+
+			from django.shortcuts import render
+			from django.http import HttpResponse
+
+			def index(request):
+			    return HttpResponse('<h1>Alura Space</h1>')
+
+		Mas dentro do site ainda nao aparece, e para isso precisamos identificar a ROTA dentro da aplicação!
+
+		em setup > urls.py
+
+		Podemos apagar aqueles comentarios todos.
+
+		importamos index de galeria.views
+
+			from galeria.views import index
+
+		dentro de urlpatterns, criamos um novo path, na raiz, ou seja no '/', vamos mostrar o index. O barra nao informamos, apenas a string vazia.
+
+			path('', index)
+
+		Codigo todo de setup/urls.py:
+
+			from django.contrib import admin
+			from django.urls import path
+			from galeria.views import index
+
+			urlpatterns = [
+			    path('admin/', admin.site.urls),
+			    path('', index),
+			]
+
+		agora na url 127.0.0.1:8000 mostra:
+
+			Alura Space
+
+Aula 9:
+
+	Isolando as URLS
+
+		Imagine se tiversemos que toda vez colocar dentro de urlpatters cada path de cada App que criarmos, a urls.py ia ficar gigante, cheia de linhas:
+
+
+			urlpatterns = [
+			    path('admin/', admin.site.urls),
+			    path('', index),
+			    path('', index),
+			    path('', index),
+			    path('', index),
+			    path('', index),
+			    path('', index),
+			    path('', index),
+			    path('', index),
+			]
+
+		Vamos fazer com que os proprios apps tenham suas listas de rotas. Vamos isolar este roteamento dentro de galeria.
+
+		vamos criar dentro de galeria um urls.py
+
+		dentro dele importamos render da urls.py e o index
+
+			from django.urls import path
+			from galeria.views import index
+
+		Sacada de boa programação:
+		Criar uma lista com todos os endpoints (urls) da galeria.
+
+			urlpatterns = [
+				path('', index)
+			]
+
+		Conteudo total de urls.py de galeria:
+
+            from django.urls import path
+            from galeria.views import index
+
+            urlpatterns = [
+                path('', index)
+            ]
+
+        removemos o import da view em urls.py do setup e importamos de django.urls o include:
+
+            from django.urls import path, include
+
+        e no path, passamos o nome do app com o script urls.py
+
+            urlpatterns = [
+                path('admin/', admin.site.urls),
+                path('', include('galeria.urls')),
+            ]
+
+        Conteudo total de setup/urls.py
+
+            from django.contrib import admin
+            from django.urls import path, include
+
+
+            urlpatterns = [
+                path('admin/', admin.site.urls),
+                path('', include('galeria.urls')),
+            ]
+
+        Assim, realizando o mesmo resultado que da aula 8.
+
+        E se quisermos criar mais paginas em galeria, é so add o path no seu urls e importar a função.
+
+Aula 10:
+
+    
+
+
+
+
+
+
+
 
 
 
