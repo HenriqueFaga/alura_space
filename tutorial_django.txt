@@ -1072,3 +1072,206 @@ Aula 14
             e
 
             <img src="{% static '/assets/ícones/1x/instagram.png' %}" alt="ícone instagram">
+
+Aula 15
+
+    URL name
+
+        Esta dando erro ao clicar na imagem, pois esta mandao a gente para imagem.html, no nosso caso funicona pois em urls.py coloquei o path para 'imagem.html" para imagem. Ele tinha colocado 
+        path('imagem/', imagem), apenas para testar.
+
+        E como forma de boa pratica, vamos colocar codigo Django no index.html para a url:
+
+            <a href="{% url 'imagem' %}">
+
+        E dentro de /DJango/galeria/urls.py
+        Add o name:
+
+            from django.urls import path
+            from galeria.views import index, imagem
+
+            urlpatterns = [
+                path('', index),
+                path('imagem/', imagem, name="imagem")
+            ]
+
+        O mesmo faremos para o index.html, o botao HOME da erro pois nao direcionamos ainda. Criamos um name para o index:
+
+            from django.urls import path
+            from galeria.views import index, imagem
+
+            urlpatterns = [
+                path('', index, name="index"),
+                path('imagem/', imagem, name="imagem")
+            ]
+
+        E no imagem.html onde tive o HOME: <a href="index.html"> COLOCAREMOS:
+
+            <a href="{% url 'index'%}">
+
+
+Aula 16
+
+    Base E DRY
+
+        Boas práticas:
+
+            DRY - Não seja repetitivo (Don't repeat yourself)
+
+                Cada parte do nosso codigo nao pode ter em outro lugar, duplicado.
+
+                Se observarmos os arquivos index.html e imagem.html, os comecos deles são iguais, {% load static %}, <html> <head> e etc.
+
+            Dentro de /templates/galeria criaremos um arquivo chamado base.html
+
+            Vamos manter a estrutura html padrao dos arquivos.
+
+                    {% load static %}
+                    <!DOCTYPE html>
+                    <html lang="pt-br">
+
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>Alura Space</title>
+                        <link rel="preconnect" href="https://fonts.googleapis.com">
+                        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                        <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+                        <link rel="stylesheet" href="{% static 'styles/style.css' %}">
+
+                    </head>
+
+                    <body>
+                    </body>
+
+                    </html>
+
+        E arrancamos estes conteudos do index.html e imagem.html.
+
+        E colocamos o seguinte conteudo no topo nos dois para puxar o base.html para eles, e mantermos os arquivos como static:
+
+            {% extends 'galeria/base.html' %}
+            {% load static %}
+
+        E para passar o conteudo dos dois arquivos para o base.html, criamos uma variavel dentro do body:
+
+            <body>
+                {% block content %}{% endblock %}
+            </body>
+
+        e no index e imagem, para identificar o que é block, vamos adicionar o começo e fechamento:
+
+            {% extends 'galeria/base.html' %}
+            {% load static %}
+            {% block content %}
+                TODO O CONTEUDO
+            {% endblock %}
+
+Aula 17
+
+    Partials
+
+        Tirando as duplicações de menu e footer de imagem.html e index.html.
+
+        quando temos funcionalidades e menu de navegacao, nao atribuimos ao base.html, e sim ao partial (pedaços, parciais), que sera uma pasta.
+
+        criaremos o diretorio partials em templates/galeria.
+
+        Criaremos o arquivo _footer.html em partials, por convenção fica com underline na frente.
+
+        conteudo do _footer.html:
+
+                {% load static %}
+                <footer class="rodape">
+                    <div class="rodape__icones">
+                        <a href="https://twitter.com/AluraOnline" target=”_blank” >
+                            <img src="{% static '/assets/ícones/1x/twitter.png' %}" alt="ícone twitter">
+                        </a>
+                        <a href="https://www.instagram.com/aluraonline/" target=”_blank” >
+                            <img src="{% static '/assets/ícones/1x/instagram.png' %}" alt="ícone instagram">
+                        </a>
+                    </div>
+                    <p class="rodape__texto">Desenvolvido por Alura</p>
+                </footer>
+
+        Tiramos este conteudo de index e imagem.
+
+        Como eu quero que o footer e o menu fiquem em todos os arquivos da galeria, vamos adicionar no base.html
+
+            <body>
+                {% block content %}{% endblock %}
+                {% include 'galeria/partials/_footer.html' %}
+            </body>
+
+        E isso é maravilhoso pois se tivermos que adicionar o ORKUT no footer, é so mudarmos em um local e ele muda para todos.
+
+        Faremos o mesmo para o menu:
+
+            /templates/galeria/partials/_menu.html
+
+                {% load static %}
+                <div class="pagina-inicial">
+                    <header class="cabecalho">
+                        <img src="{% static '/assets/logo/Logo(2).png' %}" alt="Logo da Alura Space" />
+                        <div class="cabecalho__busca">
+                            <div class="busca__fundo">
+                                <input class="busca__input" type="text" placeholder="O que você procura?">
+                                <img class="busca__icone" src="{% static '/assets/ícones/1x/search.png' %}" alt="ícone de search">
+                            </div>
+                        </div>
+                    </header>
+                    <main class="principal">
+                        <section class="menu-lateral">
+                            <nav class="menu-lateral__navegacao">
+                                <a href="{% url 'index' %}"><img src="{% static '/assets/ícones/1x/Home - ativo.png' %}"> Home</a>
+                                <a href="#"><img src="{% static '/assets/ícones/1x/Mais vistas - inativo.png' %}"> Mais vistas</a>
+                                <a href="#"><img src="{% static '/assets/ícones/1x/Novas - inativo.png' %}"> Novas</a>
+                                <a href="#"><img src="{% static '/assets/ícones/1x/Surpreenda-me - inativo.png' %}"> Surpreenda-me</a>
+                            </nav>
+                        </section>
+
+            perceba que o html esta quebrado
+
+            /templates/galeria/base.html
+
+                <body>
+                    {% include 'galeria/partials/_menu.html' %}
+                    {% block content %}{% endblock %}
+                    {% include 'galeria/partials/_footer.html' %}
+                </body>
+
+            /templates/galeria/imagem.html
+
+                {% extends 'galeria/base.html' %}
+                {% load static %}
+                {% block content %}
+
+                            <section class="conteudo">
+                                <section class="imagem">
+                                    <div class="imagem__conteudo">
+                                        <img class="imagem__imagem" src="{% static '/assets/imagens/galeria/carina-nebula.png' %}">
+                                        <div class="imagem__info">
+                                            <div class="imagem__texto">
+                                                <p class="imagem__titulo">“Penhascos Cósmicos” na Nebulosa Carina</p>
+                                                <p class="imagem__descricao">12 de julho de 2022</p>
+                                                <p class="imagem__texto">O que se parece muito com montanhas escarpadas em uma noite enluarada é na verdade a borda de uma região jovem e próxima de formação de estrelas NGC 3324 na Nebulosa Carina. Capturada em luz infravermelha pela Near-Infrared Camera ( NIRCam ) no Telescópio Espacial James Webb da NASA, esta imagem revela áreas anteriormente obscurecidas do nascimento de estrelas.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+                            </section>
+                        </main>
+                    </div>
+                {% endblock%}
+
+        html quebrado!
+        e arrancamos o mesmo para o index.html
+
+Obsevação, ele subiu todo o setup/static para o github.
+
+    https://github.com/alura-cursos/alura_space
+
+Fim de Curso!
+
+Parabéns!!!
