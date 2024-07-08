@@ -1,7 +1,7 @@
 DJango - FrameWork Web
 	
 Vamos usa-lo primeiramente para criar um site que mostra imagens de fotos que a Nasa tirou e ao clicar mostrar um texto sobre ela. Então vamos criar templates html e uso de bancos.
-Nestas aulas iniciais não terá foco em API REST, e sim site web. Teremos entao Front e Back End.
+Nestas aulas iniciais não terão foco em API REST, e sim site web. Teremos entao Front e Back End.
 
 Usaremos DJango 4.
 
@@ -45,6 +45,10 @@ Aula 2
 	Usando o comando abaixo na pasta que escolheu para criar a APP.
 
 		virtualenv venv
+
+	No windos:
+
+		py -m virtualenv venv
 
 	No caso ele criou o nome da pasta com o ambiente chamada "venv", mas pode ser qualquer nome, "zope".
 
