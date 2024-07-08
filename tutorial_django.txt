@@ -46,7 +46,7 @@ Aula 2
 
 		virtualenv venv
 
-	No windos:
+	No windows:
 
 		py -m virtualenv venv
 
@@ -69,7 +69,13 @@ Aula 2
 
 		no windows:
 
-			venv/Script/activate
+				venv/Script/activate
+
+			se nao funcionar va com cd e depois activate:
+
+				cd venv
+				cd Script
+				activate
 
 		no linux:
 
@@ -235,7 +241,7 @@ Aula 4
 
 		Neste arquivos temos tudo quanto é tipo de configuração e usaremos bastante!
 
-		E detro do arquivo alteramos estas linhas:
+		E dentro do arquivo alteramos estas linhas:
 
 			LANGUAGE_CODE = 'en-us'
 
@@ -247,7 +253,7 @@ Aula 4
 
 			TIME_ZONE = 'America/Sao_Paulo'
 
-		O que é muito legal que após salver, ele já renicia o servidor com as infos novas.
+		O que é muito legal que após salvar, ele já renicia o servidor com as infos novas.
 
 		A linguagem alterada consegue ver no http://127.0.0.1:8000/
 		E o tempo no proprio terminal:
@@ -312,7 +318,7 @@ Aula 5
 		load_dotenv()
 
 		# na variavel SECRET
-		SECRET_KEY = str(os.getenv('SECRET_KET'))
+		SECRET_KEY = str(os.getenv('SECRET_KEY'))
 
 	importamos o pacote dotenv e a funcao load_dotenv para carregar as variaveis de ambiente.
 	Nao se esqueca de add o "os" dp pathlib, para conseguirmos manipular nossos arquivos.
@@ -727,13 +733,13 @@ Aula 9:
 			]
 
 		Conteudo total de urls.py de galeria:
-
-            from django.urls import path
-            from galeria.views import index
-
-            urlpatterns = [
-                path('', index)
-            ]
+	
+	            from django.urls import path
+	            from galeria.views import index
+	
+	            urlpatterns = [
+	                path('', index)
+	            ]
 
         removemos o import da view em urls.py do setup e importamos de django.urls o include:
 
@@ -1279,3 +1285,71 @@ Obsevação, ele subiu todo o setup/static para o github.
 Fim de Curso!
 
 Parabéns!!!
+
+
+Obs de Projeto:
+	Bootstrap
+		1 - Instalando Bootstrap:
+	
+			pip install django-bootstrap-v5
+	
+		2 - Colocando nos requirements.txt
+	
+			pip freeze > requirements.txt
+	
+		3 - Colocando Bootstrap na aplicação:
+	
+			setup/settings.py:
+	
+				INSTALLED_APPS = [
+				    'django.contrib.admin',
+				    'django.contrib.auth',
+				    'django.contrib.contenttypes',
+				    'django.contrib.sessions',
+				    'django.contrib.messages',
+				    'django.contrib.staticfiles',
+				    'galeria',
+				    'bootstrap5',
+				]
+		4 - No html:
+	
+			<head>
+				{% load bootstrap5 %}
+	 			{% bootstrap_css %}
+	  			{% bootstrap_javascript %}
+			</head>
+
+	Bootstrap - Icons
+		1 - Instalando Bootstrap:
+	
+			pip install django-bootstrap-icons
+	
+		2 - Colocando nos requirements.txt
+	
+			pip freeze > requirements.txt
+	
+		3 - Colocando Bootstrap na aplicação:
+	
+			setup/settings.py:
+	
+				INSTALLED_APPS = [
+				    'django.contrib.admin',
+				    'django.contrib.auth',
+				    'django.contrib.contenttypes',
+				    'django.contrib.sessions',
+				    'django.contrib.messages',
+				    'django.contrib.staticfiles',
+				    'galeria',
+				    'bootstrap5',
+				    'django_bootstrap_icons'
+				]
+		4 - No html:
+	
+			<head>
+				{% load bootstrap_icons %}
+			</head>
+			<body>
+				{% bs_icon 'car-front-fill' %}
+			</body>
+
+	
