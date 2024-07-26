@@ -1,0 +1,629 @@
+Backend (Persistencia de dados) e ADM com DJANGO
+
+1 - Preparando Ambiente
+
+	Vamos puxar o projeto do alura space do github para a maquina local. Em uma pasta que queira:
+
+		git clone https://github.com/HenriqueFaga/alura_space.git
+
+	E criar o virtualenv, com nome de .venv, o que no nosso caso que ja está só venv (no W
+	indows):
+
+		python -m virtualenv .venv
+
+	ativando o venv:
+
+		no windows:
+
+			.venv/Script/activate
+
+		no linux:
+
+			source .venv/bin/activate
+
+	instalar os requirements.txt:
+
+		pip install -r requirements.txt
+
+	iniciando o projeto:
+
+		python manage.py runserver
+
+	Rodando em:
+
+		http://127.0.0.1:8000/
+
+
+
+2 - Nomes dinâmicos
+
+		Removendo repetição de cards dentro do templates/galeria/index.html. Deixando apenas um desse:
+
+	            <li class="card">
+                    <a href="{% url 'imagem' %}">
+                        <img class="card__imagem" src="{% static '/assets/imagens/galeria/carina-nebula.png' %}" alt="foto">
+                    </a>
+                    <span class="card__tag">Estrelas</span>
+                    <div class="card__info">
+                        <p class="card__titulo">Nome da foto</p>
+                        <div class="card__texto">
+                            <p class="card__descricao">Fonte/fotógrafo/satélite</p>
+                            <span>
+                                <img src="{% static '/assets/ícones/1x/favorite_outline.png' %}" alt="ícone de coração">
+                            </span>
+                        </div>
+                    </div>
+                </li>
+
+        Vamos na /galeria/views.py para criar dados (estrutura de dados ) para enviar ao index.html.
+
+	        from django.shortcuts import render
+
+			def index(request):
+
+		        dados = {
+		        	1: {'nome': 'Nebulosa de Carina',
+		        		'legenda': 'webbtelescope.org / NASA/ James Webb'},
+		        	2: {'nome': 'Galáxia NGC 1079',
+		        		'legenda': 'nasa.org / NASA / Hubble'}
+		        }
+
+			    return render(request, 'galeria/index.html', {'cards': dados})
+
+			def imagem(request):
+			    return render(request, 'galeria/imagem.html')
+
+		No index.html, vamos criar uma estrutura de repetição para dados, assim puxar as informações do dict e colocar para cada lista de cards.
+
+		exemplo de loop:
+
+			{% for id, value in dados.items %}
+				{{ id }}
+			{% endfor %}
+		IMPORTANTE! No python, o dados.items deve estar com parenteses no final dados.items()
+			No caso do DJango não! Testei tanto no Python 2.7 como no Python 3.8.
+
+		no index.html:
+
+            {% for foto_id, info in cards.items %}
+            <li class="card">
+                <a href="{% url 'imagem' %}">
+                    <img class="card__imagem" src="{% static '/assets/imagens/galeria/carina-nebula.png' %}" alt="foto">
+                </a>
+                <span class="card__tag">Estrelas</span>
+                <div class="card__info">
+                    <p class="card__titulo">{{ info.nome }}</p>
+                    <div class="card__texto">
+                        <p class="card__descricao">{{ info.legenda }}</p>
+                        <span>
+                            <img src="{% static '/assets/ícones/1x/favorite_outline.png' %}" alt="ícone de coração">
+                        </span>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+
+
+3 - Banco de Dados:
+
+	Dentro de galeria temos um script chamado models.py
+
+	Na model vamos criar estruturas em classes para que o DJango interprete como Tabela do Banco. Ele traduz uma classe para uma tabela do banco de dados.
+
+	Object-Relational-Mapper (ORM): Fará a tradução das classes (python puro) para banco de dados.
+
+	No galeria/models.py
+
+		from django.db import models
+
+		class Fotografia(models.Model):
+		    # Colunas:
+
+		    # CharField -> String;
+		    # max_length maximo de char.
+		    # null=False nao pode ser nulo.
+		    # blank=False nao pode ser string vazia!
+		    nome = models.CharField(max_length=100, null=False, blank=False)
+		    legenda = models.CharField(max_length=150, null=False, blank=False)
+		    # TextField -> campo de texto
+		    descriacao = models.TextField(null=False, blank=False)
+		    foto = models.CharField(max_length=150, null=False, blank=False)
+
+		    def __str__(self):
+		        # Boa pratica, devolve o nome de cada um dos itens.
+		        return f"Fotografia [nome={self.nome}]"
+
+	Migration: 
+	Usamos o comando makemigrations para mostrar para o Django que há uma nova tabela do banco de dados que desejamos traduzir para, definitivamente, uma tabela no banco de dados.
+
+		python manage.py makemigrations
+
+	Assim, usando o comando acima, ele cria um arquivo:
+
+		Migrations for 'galeria':
+		  galeria/migrations/0001_initial.py
+		    - Create model Fotografia
+
+	Nesse documento: galeria/migrations/0001_initial.py
+	Temos um relatorio do que quero fazer:
+
+		# Generated by Django 4.2.13 on 2024-06-30 23:27
+
+		from django.db import migrations, models
+
+
+		class Migration(migrations.Migration):
+
+		    initial = True
+
+		    dependencies = [
+		    ]
+
+		    operations = [
+		        migrations.CreateModel(
+		            name='Fotografia',
+		            fields=[
+		                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+		                ('nome', models.CharField(max_length=100)),
+		                ('legenda', models.CharField(max_length=150)),
+		                ('descriacao', models.TextField()),
+		                ('foto', models.CharField(max_length=150)),
+		            ],
+		        ),
+		    ]
+
+	Perceba que ele criou automaticamente um ID, como prymary_key inteiro.
+
+	E assim para que de fato ele crie a tabela:
+
+		python manage.py migrate
+
+	Assim, criamos o banco de dados, usando um já existente dentro do DJango chamado SQLITE.
+
+	E criou o bando de dados no arquivo na raiz:
+
+		db.sqlite3
+
+	Abrindo ele conseguimos ver que tem umas tabelas que foram criados automaticamente e um chamada galeria_fotografia.
+
+
+Observacoes:
+
+	Cada linguagem (ou mesmo framework) que suporta orientação a objetos possui um ORM de utilização mais comum:
+
+		Python e Flask: SQLAlchemy;
+		Python e Django: Django ORM;
+		Java: Hibernate;
+		C#: Dapper ORM;
+		PHP: Doctrine;
+		.NET framework : Microsoft Entity Framework.
+
+	Vantagens da utilização de um ORM:
+		Possibilita, para quem programa, construir bancos de dados utilizando sua linguagem de programação de maior fluência, sem ter que se aprofundar nas complexidades do código SQL;
+		Torna a aplicação independente do RDBMS utilizado. Isso facilita uma eventual migração de banco de dados, bem como a escrita de queries genéricas que se enquadram nos mais diversos RDBMS (MySQL, PostgreSQL, Microsoft SQL Server, etc);
+		A conexão entre a aplicação e o banco de dados se torna robusta, segura e menos sujeita a erros de código, uma vez que poucas intervenções de código são necessárias;
+		Alguns ORM como o SQLAlchemy possuem um toolkit completo de ferramentas extras que otimizam a interação com o banco de dados.
+	Desvantagens da utilização de um ORM:
+		A integração de ORMs com sistemas legados pode ser problemática;
+		Pode criar a ilusão, para desenvolvedores iniciantes, que não é necessária uma compreensão básica de linguagem SQL para se tornar um profissional completo de desenvolvimento de aplicações web.
+
+4 - Criando Dados
+
+	Vamos no terminal e colocamos o comando:
+
+		python manage.py shell
+
+	Assim ele abre uma shell interativa do proprio DJANGO.
+
+	No python shell do django, vamos codar:
+
+		>>> from galeria.models import Fotografia
+		>>> foto = Fotografia(nome="Nebulosa de Carina", legenda='webbtelescope.org / NASA/ James Webb', foto="carina-nebula.png")
+		>>> foto.save()
+
+	Desta forma ele cria a linha no banco, repare que ele coloca os valores da classe nos parenteses direto!
+
+	O que tambem da pra fazer desta forma:
+
+		>>> from galeria.models import Fotografia
+		>>> foto = Fotografia()
+		>>> foto.nome = 'Nasa'
+		>>> foto
+		<Fotografia: Fotografia [nome=Nasa]>
+
+	Vendo todos os objetos de Fotografia:
+
+		>>> Fotografia.objects.all()
+		<QuerySet [<Fotografia: Fotografia [nome=Nebulosa de Carina]>]>
+
+	o "Fotografia: Fotografia [nome=Nebulosa de Carina]" aparece por conta da boa prática que fizemos com def __str__
+
+	Outra boa pratica interessante, dentro de setup/settings.py, vamos em INSTALLED_APPS e ao inves de colocar só 'galeria', vamos trocar por 'galeria.apps.GaleriaConfig'.
+
+	Chamando a galeria dessa forma, ele não vai puxar somente o aplicativo, e sim todos os arquivos com as configurações. Se realizarmos alguma alteração na aplicação, ele atualiza e puxa essa modificação.
+
+	GaleriaConfig é a classe dentro de galeria/app.py
+
+		INSTALLED_APPS = [
+		    'django.contrib.admin',
+		    'django.contrib.auth',
+		    'django.contrib.contenttypes',
+		    'django.contrib.sessions',
+		    'django.contrib.messages',
+		    'django.contrib.staticfiles',
+		    'galeria.apps.GaleriaConfig',
+		]
+
+	esse app.py foi criado pelo Django no momento da criacao de galeria.
+
+	Django ORM para transformar as classes models em tabelas no banco de dados.
+
+
+5 - Acessando o banco
+
+		Removendo o dict dados estatico dentro de
+		/galeria/views.py para puxarmos direto do banco.
+
+		Puxando do banco, precisamos importar a classe fotografia e instancia dentro do index, para puxar todos os objetos dela:
+
+			from django.shortcuts import render
+			from galeria.models import Fotografia
+
+			def index(request):
+			    # request, template_name, context=None, content_type=None, status=None, using=None
+			    fotografias = Fotografia.objects.all()
+			    return render(request, 'galeria/index.html', context={'cards': fotografias})
+
+			def imagem(request):
+			    return render(request, 'galeria/imagem.html')
+
+
+		Em templates/galeria/index.html vamos mudar o for, e criar uma condicao para que se tiver cards mostre (e nao mostrar erro se nao tiver nada na tabela), ficando:
+
+			{% if cards %}
+				{% for fotografia in cards%}
+				{% endfor %}
+			{% else %}
+			{% endif%}
+
+		Ele colocou um else vazio, mas nao vejo necessidade.
+		E cada variavel, ao inves de info.nome vai ser fotografia.nome .
+
+		Ficando:
+
+            {% if cards %}
+            	{% for fotografia in cards %}
+                    <li class="card">
+                        <a href="{% url 'imagem' %}">
+                            <img class="card__imagem" src="{% static '/assets/imagens/galeria/' %}{{ fotografia.foto }}" alt="foto">
+                        </a>
+                        <span class="card__tag">Estrelas</span>
+                        <div class="card__info">
+                            <p class="card__titulo">{{ fotografia.nome }}</p>
+                            <div class="card__texto">
+                                <p class="card__descricao">{{ fotografia.legenda }}</p>
+                                <span>
+                                    <img src="{% static '/assets/ícones/1x/favorite_outline.png' %}" alt="ícone de coração">
+                                </span>
+                            </div>
+                        </div>
+                    </li>
+                {% endfor %}
+            {% else %}
+            {% endif %}
+
+        E transformou o path da imagem tambem dinamico. {% static '/assets/imagens/galeria/' %}{{ fotografia.foto }}
+
+
+6 - Passando uma referência
+
+		Adicionando mais uma foto no banco:
+
+			python manage.py shell
+
+			>>> from galeria.models import Fotografia
+			>>> foto = Fotografia(nome="Galaxia NGC 1079", legenda="naga.org / Nasa / Hubble", foto='hubble_ngc1079.jpg')
+
+		Antes de adicionarmos a foto, vamos colocar a imagem da foto nova que baixamos em:
+			https://github.com/alura-cursos/2711-projeto-django-2/blob/aula_2/setup/static/assets/imagens/galeria/hubble_ngc1079.jpg
+
+		Vamos colar esta foto em:
+
+			DJango/setup/static/assets/imagens/galeria/hubble_ngc1079.jpg
+
+		Há outra pasta chamada "static" no projeto, mas a que precisamos arrastar a imagem está dentro da pasta "setup". A pasta "static" que está fora de "setup" foi gerada quando rodamos 'collect static' no curso anterior.
+
+		Ao executarmos o comando 'collect static' o Django diferencia dois tipos de diretórios: para aplicações em desenvolvimento e outro para o statics que referenciam a aplicação que está em produção. Nesse curso, usaremos o diretório para aplicações em desenvolvimento (dentro de "setup").
+
+		Então, só podemos adicionar, apagar e etc dentro de setup/static
+
+		Agora que temos a imagem, podemos inserir a fotografia pelo shell!
+
+			>>> foto.save()
+
+		Deixando dinamico a imagem em imagem.html, então vamos passar um parametro no index.html para que ao clicar e redirecionar para imagem.html tenha o ID da foto.
+
+			Index.html, Parametro fotografia.id:
+
+				<a href="{% url 'imagem' fotografia.id %}">
+					<img class="card__imagem" src="{% static '/assets/imagens/galeria/' %}{{ fotografia.foto }}" alt="foto">
+                </a>
+
+            Em galeria/urls.py, parametro foto_id sendo um inteiro:
+
+            	from django.urls import path
+				from galeria.views import index, imagem
+
+				urlpatterns = [
+				    path('', index, name="index"),
+				    path('imagem/<int:foto_id>', imagem, name="imagem")
+				]
+
+			Na galeria/views.py, no metodo imagem colocaremos o parametro foto_id:
+
+				def imagem(request, foto_id):
+    				return render(request, 'galeria/imagem.html')
+
+    		Continuando em galeria/views.py, vamos puxar do banco a foto com o inteiro ID, que por sinal é um mero número inteiro, ele nao sabe o que fazer com isso, nem tem o mesmo nome em banco.
+
+    		Vamos instancia a fotografia usando o metodo get_object_or_404, que se nao encontrar a imagem da um erro de 404, passando a Model Fotografia e a primary key. Importamos do shortcuts o get_object_or_404. E no render criamos um dict com a info de fotografia:
+
+				from django.shortcuts import render, get_object_or_404
+				from galeria.models import Fotografia
+
+				def index(request):
+				    # request, template_name, context=None, content_type=None, status=None, using=None
+				    fotografias = Fotografia.objects.all()
+				    return render(request, 'galeria/index.html', context={'cards': fotografias})
+
+				def imagem(request, foto_id):
+				    fotografia = get_object_or_404(Fotografia, pk=foto_id)
+				    return render(request, 'galeria/imagem.html', {'fotografia': fotografia})
+
+			Em imagem.html:
+
+				{% extends 'galeria/base.html' %}
+				{% load static %}
+				{% block content %}
+
+				            <section class="conteudo">
+				                <section class="imagem">
+				                    <div class="imagem__conteudo">
+				                        <img class="imagem__imagem" src="{% static '/assets/imagens/galeria/' %}{{ fotografia.foto }}">
+				                        <div class="imagem__info">
+				                            <div class="imagem__texto">
+				                                <p class="imagem__titulo">{{ fotografia.nome }}</p>
+				                                <p class="imagem__descricao">{{ fotografia.legenda }}</p>
+				                                <p class="imagem__texto"></p>
+				                            </div>
+				                        </div>
+				                    </div>
+				                </section>
+				            </section>
+				        </main>
+				    </div>
+				{% endblock%}
+
+			Perceba que nao faz "for" para interar cada fotografia, neste caso só temos dentro de dados uma chave como "fotografia".
+
+
+7 - Django Admin 
+		
+		Forma mais fácil para inserir dados no banco de dados.
+
+		Documentação:
+
+			https://docs.djangoproject.com/en/4.1/ref/contrib/admin/
+
+		O DJango Admin já está ativo na aplicação:
+
+			http://127.0.0.1:8000/admin
+
+		Mas o login não é admin/admin
+
+		Vamos criar o famoso SUPER USUARIO.
+		No terminal:
+
+			python manage.py createsuperuser
+
+		Vai pedir para criar o usuario, email(nao necessário, pode deixar em branco) e senha.
+
+		Nesta aplicação esta henrique/admin
+
+		Agora podemos logar!
+
+		Por enquanto é só um ADMIN vazio, sem as tabelas, apenas USUARIOS E GRUPOS.
+
+8 - CRUD no Admin
+
+		Vamos adicionar o banco de dados dentro do Django Admin. Para isso, vamos ao arquivo "admin.py" dentro do pacote "galeria".
+
+			DJango/galeria/admin.py
+			
+				from django.contrib import admin
+				from galeria.models import Fotografia
+
+				admin.site.register(Fotografia)
+
+		Com isso, se dervmos reload no site, já aparece a GALERIA / FOTOGRAFIA no ADMIN!
+
+		Clicando nela, aparece as linhas do banco:
+
+			FOTOGRAFIA
+			Fotografia [nome=Galaxia NGC 1079]
+			Fotografia [nome=Nebulosa de Carina]
+
+		E clicando em "ADICIONAR FOTOGRAFIA" podemos criar mais uma linha em banco!
+		E Na "Ação" > "Remover fotografias delecionados" podemos remover a linha!!!
+
+		Personalizar o Admin:
+
+			Essa parte das linhas ta muito feia:
+
+				Fotografia [nome=Nebulosa de Carina]
+
+			Vamos mudar isso.
+			Em DJango/galeria/admin.py criamos uma classe chamada ListandoFotografias herdando admin.ModelAdmin. um parametro chamado list_display com as colunas que quero mostrar. Depois coloco como parametro no register:
+
+				from django.contrib import admin
+				from galeria.models import Fotografia
+
+				class ListandoFotografias(admin.ModelAdmin):
+				    list_display = ("id", "nome", "legenda")
+
+				admin.site.register(Fotografia, ListandoFotografias)
+
+			Assim aparece mais bonito:
+
+				ID  NOME    		    LEGENDA
+				2	Galaxia NGC 1079	naga.org / Nasa / Hubble
+				1	Nebulosa de Carina	webbtelescope.org / NASA/ James Webb
+
+			Colocando o link da pagina da fotografia para que quando eu clique no nome ou no id dela vá para sua pagina de edição da linha:
+
+				from django.contrib import admin
+				from galeria.models import Fotografia
+
+				class ListandoFotografias(admin.ModelAdmin):
+				    list_display = ("id", "nome", "legenda")
+				    list_display_links = ("id", "nome")
+
+				admin.site.register(Fotografia, ListandoFotografias)
+
+			E pronto! Adicionamos só o parametro padrão list_display_links que o django identifica para colocar os links em ID e Nome.
+
+			Se formos pelo VSCODE e tiver a extensão para ver SQLITE, conseguiremos ver as mudanças salvas ou adicionadas em fotografias. Então foi manipulado no nosso banco de dados!
+
+			Adicionando um campo de busca, para que se tivermos um monte de fotos fique mais facil para encontrarmos.
+
+			Continuando pelo DJango/galeria/admin.py, add mais um parametro chamado search_fields para buscar por nome:
+
+				from django.contrib import admin
+				from galeria.models import Fotografia
+
+				class ListandoFotografias(admin.ModelAdmin):
+				    list_display = ("id", "nome", "legenda")
+				    list_display_links = ("id", "nome")
+				    search_fields = ("nome",)
+
+				admin.site.register(Fotografia, ListandoFotografias)
+
+			Vendo que precisa ter uma virgula no final da tupla, pois se não vira string sozinha, apenas uma string, e precisa ser tupla. Exemplo no python:
+
+				>>> a = ("qwe")
+				>>> a
+				'qwe'
+				>>> a = ("123", )
+				>>> a
+				('123',)
+
+			 Diferente da lista, que mesmo tendo um elemento fica como lista! Tupla é bugado.
+
+			 	>>> b = [1]
+				>>> b
+				[1]
+
+			E com o search já aparece o campo para pesquisar por nome.
+
+			Se colocarmos tambem por ID, ele busca por ID!
+
+				search_fields = ("nome", "id")
+
+			O que é muito bom e rapido!
+
+			O mesmo para leganda! E so colocando um trecho de pesquisa, ele encontra tudo relacionado, como se usasse por tras dos panos um ILIKE!
+
+				search_fields = ("nome", "id", "legenda")
+
+
+9 - Incluindo categoria
+		
+		Vamos incluir a coluna categoria dentro de Fotografia, para os botões de busque por tags no index do site.
+
+		Dentro de DJango/galeria/models.py adicionamos uma variavel a mais para categoria:
+
+			categoria = models.CharField(max_length=150, null=False, blank=False)
+
+		Mas, categoria não pode ser qualquer uma, tem que ser pré definida só algumas. Para isso vamos criar uma lista com os tipos de categorias
+
+			OPCOES_CATEGORIA = [
+				("NEBULOSA", "Nebulosa"),
+				("ESTRELA", "Estrela"),
+				("GALÁXIA", "Galáxia"),
+				("PLANETA", "Planeta")
+			]
+
+		E deve ser neste formato de tupla para o DJANGO entender, pois foi programado desta forma.
+
+		Em categoria add o parametro choices com as OPCOES_CATEGORIA. Podendo remover NULL E BLANK pois nunca serão, COLOCANDO default string vazio:
+
+			categoria = models.CharField(max_length=150, choices=OPCOES_CATEGORIA, default='')
+
+		Ficando:
+
+			DJango/galeria/models.py
+
+				from django.db import models
+
+				class Fotografia(models.Model):
+				    # Colunas:
+
+				    OPCOES_CATEGORIA = [
+				        ("NEBULOSA", "Nebulosa"),
+				        ("ESTRELA", "Estrela"),
+				        ("GALÁXIA", "Galáxia"),
+				        ("PLANETA", "Planeta")
+				    ]
+
+				    # CharField -> String;
+				    # max_length maximo de char.
+				    # null=False nao pode ser nulo.
+				    # blank=False nao pode ser string vazia!
+				    nome = models.CharField(max_length=100, null=False, blank=False)
+				    legenda = models.CharField(max_length=150, null=False, blank=False)
+				    # TextField -> campo de texto
+				    descriacao = models.TextField(null=False, blank=False)
+				    foto = models.CharField(max_length=150, null=False, blank=False)
+				    categoria = models.CharField(max_length=150, choices=OPCOES_CATEGORIA, default='')
+
+				    def __str__(self):
+				        # Boa pratica, devolve o nome de cada um dos itens.
+				        return f"Fotografia [nome={self.nome}]"
+
+		E como mexemos no banco, ele NÃO vai automatico! Precisamos vazer uma migration!
+
+			python manage.py makemigrations
+
+		Retorno:
+
+			Migrations for 'galeria':
+			  galeria/migrations/0002_fotografia_categoria.py
+			    - Add field categoria to fotografia
+
+		Dentro de galeria/migrations/0002_fotografia_categoria.py aparece a categoria nova e suas choices!
+
+		E depois mais um comando, para efetivamente ir para banco:
+
+			python manage.py migrate
+
+		Retorno:
+
+			Operations to perform:
+			  Apply all migrations: admin, auth, contenttypes, galeria, sessions
+			Running migrations:
+			  Applying galeria.0002_fotografia_categoria... OK
+
+		Rode o server novamente:
+
+			python3 manage.py runserver
+
+		Se rodar o runserver antes do migrate ele da pau pra iniciar o banco.
+
+		Entrando no ADMIN e indo numa fotografia, estará lá um SELECT BOX para escolher a categoria e está como padrão NEBULOSA.
+
+		Add categoria no list_display do galeria/admin.py vemos que
+		as antigas não ficam com categoria nova tem que add:
+
+			ID  NOME                LEGENDA                             CATEGORIA
+			2	Galaxia NGC 1079	naga.org / Nasa / Hubble	            -
+			1	Nebulosa de Carina	webbtelescope.org / NASA/ James Webb	-
