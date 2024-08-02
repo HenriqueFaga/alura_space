@@ -627,3 +627,251 @@ Observacoes:
 			ID  NOME                LEGENDA                             CATEGORIA
 			2	Galaxia NGC 1079	naga.org / Nasa / Hubble	            -
 			1	Nebulosa de Carina	webbtelescope.org / NASA/ James Webb	-
+
+
+10 - Personalizando o admin
+
+		1 - Colocando Filtro por categoria, sendo exemplo de filtro por ordem alfabetica, menor preço e etc.
+
+		Em DJango/galeria/admin.py, vamos colocar mais uma variavel chamada
+		list_filter e a tupla com com a categoria:
+
+			list_filter = ("categoria", )
+
+		No canto direito em http://127.0.0.1:8000/admin/galeria/fotografia/ aparece
+		um filtro para selecionar por tipo de categoria.
+
+		Ficando:
+
+			from django.contrib import admin
+			from galeria.models import Fotografia
+
+			class ListandoFotografias(admin.ModelAdmin):
+			    list_display = ("id", "nome", "legenda", "categoria")
+			    list_display_links = ("id", "nome")
+			    search_fields = ("nome", "id", "legenda")
+
+			admin.site.register(Fotografia, ListandoFotografias)
+
+		2 - Colocando paginação para fotografias.
+		Suponha que temos 50 itens no nosso Django Admin. Todos eles ficarão comprimidos nessa única página? Não! Quero que haja uma quebra a partir de pelo menos 10 itens por página.
+		Para isso, vamos retornar ao código, colocar o atributo list_per_page e definir 10 itens. Antes para teste vamos colocar 1 por pagina.
+
+			list_per_page = 1
+
+		E lá teremos duas paginas pois temos duas fotos.
+
+			list_per_page = 10
+
+		Na documentação mostra inumeras coisas que da pra personalizar mais o DJango!
+
+
+11 - Funcionalidade de publicação
+
+		Já avançamos com várias opções no nosso admin, mas ainda quero adicionar uma funcionalidade ao site. Nele, temos uma galeria de fotografias do espaço.
+
+		Suponha que eu queira inserir uma fotografia e não tenho certeza se quero que ela apareça no index logo de cara, ou seja, quero ter a possibilidade de escolher se ela será ou não publicada na página principal.
+
+		Inserimos o item no banco de dados da nossa aplicação, mas por enquanto, não queremos publicá-lo. Às vezes, ainda falta alguma informação que será buscada. Como pessoa usuária, seria interessante ter essa premissa.
+
+		Faremos isso alterando o nosso model, adicionando um campo chamado publicada. Em frente, colocamos models.BooleanField e definimos o default como "False". Assim o padrão entra como False e só se quisermos publicar colocamos como True.
+
+			DJango/galeria/models.py
+
+				publicada = models.BooleanField(default=False)
+
+		Para add em banco:
+			python manage.py makemigrations
+			python manage.py migrate
+
+
+		Na view temos que criar a regra, trocando o all() para filter(publicada=True):
+
+			DJango/galeria/views.py >> index
+
+				
+
+		Com isso, as fotografias saem do site, então precisamos colocar na edição de cada fotografica o publicada checked (True).
+
+		Colocando para mostrar o campo publicada na tabela de fotografia no admin:
+
+			DJango/galeria/admin.py
+
+				list_display = ("id", "nome", "legenda", "categoria", "publicada")
+
+		Assim ele mostra dois icones bonitinhos, um com checked verde (True) e outro com x vermelho (False).
+
+		Para nao precisarmos entrar na tela de edição da fotografia para pode alterar o publicada e já na tabela podemos dar o checked, podemos add uma nova variavel chamada list_editable com a tupla com "publicada":
+
+			list_editable = ("publicada",)
+
+		Assim podemos colocar o check ou tirar da publicada e clicar em "Salvar" para salvar!
+
+
+12 - Incrementando o index
+	
+		Criando um campo Data na Fotografia para que assim que eu add uma nova fotografia, fique com a data de inserção. E default vai ser NOW, a data do instante da inserção, então devemos importar a biblioteca datetime
+
+			DJango/galeria/models.py
+
+				from datetime import datetime 
+
+				data_fotografia = models.DateTimeField(default=datetime.now, blank=False)
+
+		Para add em banco:
+			python manage.py makemigrations
+			python manage.py migrate
+
+		Se formos no editar da foto em admin, tem o campo da data com a seleção de data e hora!
+
+		Ordenando pelo mais recente no site:
+
+			DJango/galeria/views.py >> index
+
+				fotografias = Fotografia.objects.order_by("data_fotografia").filter(publicada=True)
+
+		Assim já aparece pelo mais recente
+
+		Se eu quiser inverter, do mais antigo para o mais recente, colocamos um menos na frente da data_fotografia dentro string:
+
+				fotografias = Fotografia.objects.order_by("-data_fotografia").filter(publicada=True)
+
+13 - Upload de Imagem
+
+		Até agora, para subir uma imagem, teriamos que colocar ela dentro static e depois colocar o caminho (no caso o nome dela: hubble_ngc1079.jpg) da foto na mão dentro da coluna Foto da tabela fotografia.
+
+		Queremos fazer isso de forma automatica dentro da tela de CRUD no ADMIN, realizando o upload!
+
+		Em setup/settings.py vamos criar um diretorio exclusivo para arquivos de media
+
+			setup/settings.py
+
+				# Media
+
+				MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+				MEDIA_URL = "/media/"
+
+		Da mesma forma que criamos referências de STATIC_URL e STATIC_ROOT porque criamos um diretório específico só para os arquivos estáticos, faremos o mesmo para os arquivos de mídia, que correspondem às imagens subidas no site pelas pessoas usuárias.
+
+		Para fazer isso, inseriremos o comentário # Media logo abaixo das variáveis globais STATIC_URL, STATICFILES_DIRS e STATIC_ROOT, para indicar que a seguir virão as questões de mídia.
+
+		A primeira coisa que colocaremos a seguir é o MEDIA_ROOT = os.path.join(). Dentro dos parênteses, queremos que ele busque o caminho de um diretório que ficará dentro do nosso diretório base do projeto.
+
+		Daremos a instrução BASE_DIR, "media" para que seja feita a busca por um diretório chamado "media" no diretório base. Usaremos o nome em inglês porque é o nome padrão usado para esse tipo de diretório.
+
+		A próxima variável global que criaremos é a MEDIA_URL = "/media/". Essas são as duas referências que usaremos para o nosso diretório de mídia, mas isso não é suficiente.
+
+		No urls.py do setup, colocamos uma concatenacao com urlpatterns, será uma soma de listas, com + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT), e importamos o settings e o static do django:
+
+			setup/urls.py
+
+				from django.contrib import admin
+				from django.urls import path, include
+				from django.conf import settings
+				from django.conf.urls.static import static
+
+
+				urlpatterns = [
+				    path('admin/', admin.site.urls),
+				    path('', include('galeria.urls')),
+				] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+		Alterando a model de galeria para transformar o campo foto de charfield para ImageField, com parametro upload_to que vai dizer onde deve realizar o upload da imagem, criando um diretorio "fotos" em media. Para nao termos problemas com cadastro de imagens com mesmo nome e substituir a outra, vamos criar diretorios com ano mÊs e dia "/foto/ANO/MES/DIA/" da data que está sendo feito o upload. Seungo Parametro como blank=True, ou seja, podemos cadastrar uma imagem sem ter uma imagem, o que é estranho, mas pode acontecer, então nesse caso colocaremos uma imagem padrão.
+
+			galeria/models.py:
+
+				foto = models.ImageField(upload_to="foto/%Y/%m/%d/", blank=True)
+
+		Modamos a model fazemos a migração:
+			python manage.py makemigrations
+			python manage.py migrate
+
+		Agora no ADMIN, clicando para add nova fotografia temos o campo para fazer o upload!
+		Fazendo o upload da imagem, ela fica em banco na coluna foto neste formato:
+
+			foto/2024/08/02/teste.jpg
+
+		E na raiz do projeto ele criou o diretorio media:
+
+			media
+			|__foto
+				|__2024
+					|__08
+						|__02
+							|__teste.jpg
+
+14 - Imagem "not found"
+
+		Fizemos o upload no media mas nao configuramos ainda para aparecer no site.
+		As imagens antigas nao estao no media, estao no diretorio static!
+
+		Vamos fazer uma boa pratica antes que se nao encontrou a imagem ele mostra uma foto padrão.
+
+		Vamos baixar a imagem not-found.png e colar dentro de setup/static/assets/imagens/galeria
+
+		No index.html em templates/galeria criamos uma estrutura condicional que quando nao tem aparece not-found, se tem aparece a imagem. Lembrando que quando mudamos de charfield para imagefield, ainda existe a string da antiga imagem, por exemplo hubble_ngc1079.jpg na coluna foto, isso significa que vai aparecer a string no editar da fotografia mas na hora que o django pega e transforma em imagemfield ele não acha a imagem, entao no IF, por mais que tenha a string em fotografia.foto, ele nao gerou a imagem, entao o IF funciona, ele nao valida se tem string neste caso, a string  hubble_ngc1079.jpg, valida a imagem. Por isso colocamos o atributo url em fotografia.foto.url!!!
+
+			templates/galeria/index.html
+
+                <a href="{% url 'imagem' fotografia.id %}">
+                    {% if fotografia.foto == "" or fotografia.foto == null %}
+                        <img class="card__imagem" src="{% static '/assets/imagens/galeria/not-found.png' %}" alt="foto">
+                    {% else %}
+                        <img class="card__imagem" src="{{ fotografia.foto.url }}" alt="foto">
+                    {% endif %}
+                </a>
+
+        Agora funciona para a nova imagem no media, mas as antigas deram ruim. Vamos fazer upload das antigas no ADMIN para ficar tudo bonito!
+
+        Se queremos subistituir uma que ja esta no media, tem o botao limpar, mas ele so server para apagar a string em banco e nao a imagem no media, ficando sem referencia a imagem em banco. Se fizermos upload da mesma imagem, com mesmo nome, ele coloca novamente sem apagar a anterior, colocando um texto aleatorio ao fim:
+
+        	foto/2024/08/02/carina-nebula_pcFutuk.png
+
+15 - Alterando template imagem
+
+		Alterando para pegar no media em templates/galeria/imagem.html
+
+	        {% if fotografia.foto == "" or fotografia.foto == null %}
+	            <img class="card__imagem" src="{% static '/assets/imagens/galeria/not-found.png' %}" alt="foto">
+	        {% else %}
+	            <img class="card__imagem" src="{{ fotografia.foto.url }}" alt="foto">
+	        {% endif %}
+
+	    Pronto!
+
+	    Se cadastrarmos uma foto sem imagem, ele aparece o not-found!!!
+
+	    Ajustando a referencia que esta feia quando clicamos para ediar a foto em ADMIN:
+
+	    		Início › Galeria › Fotografias › Fotografia [nome=Galaxia NGC 1079]
+
+	   	Que foi bem util no terminal, mas agora não. Vamos colocar apenas o nome da FOTO:
+
+	   		/galeria/models.py
+
+	   			Antes:
+
+	   				def __str__(self):
+				        # Boa pratica, devolve o nome de cada um dos itens.
+				        return f"Fotografia [nome={self.nome}]"
+
+				Depois:
+
+
+	   				def __str__(self):
+				        # Boa pratica, devolve o nome de cada um dos itens.
+				        return self.nome
+
+		Pronto:
+
+			Início › Galeria › Fotografias › Galaxia NGC 1079
+
+Obs:
+
+	Durante o desenvolvimento de uma aplicação Django, dividimos nossa aplicação em duas partes: nosso site e o admin do Django, onde criamos os conteúdos que serão exibidos no site. Porém, no Django é possível filtrar ou ordenar os objetos que queremos renderizar no site.
+
+	É possível buscar todos os objetos, sem filtros e sem ordenação.
+
+	É possível adicionar mais de um filtro.
+
+	Podemos adicionar mais de um filtro, por exemplo: Fotografia.objects.order_by('-data_fotografia').filter(publicada=True).filter(categoria=nebulosa).
