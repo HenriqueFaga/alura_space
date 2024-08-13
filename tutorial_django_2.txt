@@ -875,3 +875,105 @@ Obs:
 	É possível adicionar mais de um filtro.
 
 	Podemos adicionar mais de um filtro, por exemplo: Fotografia.objects.order_by('-data_fotografia').filter(publicada=True).filter(categoria=nebulosa).
+
+
+Aula 16 - Funcionalidade buscar
+		
+		Na página principal, no nosso "index.html", percebemos haver uma barra de busca no canto superior direito, ainda inutil.
+
+		Então, vamos criar uma nova rota em galeria/urls.py que quando clicar em buscar vai para ele. O path vai ser chamado de "buscar". O metodo que vai puxar para executar de views vai ser tambme chamado de buscar. O name, ou referencia, tambem vai ser chamado de "buscar". E importar o buscar da views.py
+
+			from galeria import index, imagem, buscar
+
+			.
+			.
+			.
+
+			path('buscar/<str:pesquisa>', buscar, name="buscar")
+
+		Em galeria/views.py, criamos o metodo buscar. O segundo parametro é o html, vamos colocar o "buscar.html" e depois criamos o template:
+
+			def buscar(request):
+				return render(request, "galeria/buscar.html")
+
+		Criando o template em templates/galeria/buscar.html, e para teste, so colocou:
+
+			<h1>Teste</h1>
+
+		No templates/galeria/partials/_menu.html temos que redirecionar a busca para buscar, ENTÃO criaremos uma form, add botao submit na imagem e name no input texto:
+
+			    <form action="{% url 'buscar' %}">
+                    <input class="busca__input" type="text" name="buscar" placeholder="O que você procura?">
+                    <button type="submit">
+                        <img class="busca__icone" src="{% static '/assets/ícones/1x/search.png' %}" alt="ícone de search">
+                    </button>
+                </form>
+
+
+Aula 17 - View de buscar
+
+	O buscar.html vai ser bem parecido com o index.html, mas com o filtro pela pesquisa.
+	Vamos copiar e colar o index no buscar, e no else, de imagens nao encontradas, vamos adicionar a frase "Fotografias não encontradas!"
+
+		<div class="imagem__texto">
+			<p>
+				Fotografias não encontradas!
+			</p>
+		</div>
+
+	Podendo tambem colocar esse cara no else do index!
+
+	Em galeria/views.py, vamos fazer com que o metodo receba o parametro de busca, e tambem fazer com que busque (filter) pelo texto fornecido, passando o select para cards para renderizar. Criando uma condicional antes para conferir se existe o atributo buscar vindo na REQUEST, e outra condição se tiver conteudo em buscar (nome_a_buscar) ai sim ele faz a busca:
+
+		def buscar(request):
+			fotografias = Fotografia.objects.order_by("-data_fotografia").filter(publicada=True)
+			if "buscar" in request.GET:
+				nome_a_buscar = request.GET['buscar']
+				if nome_a_buscar:
+					fotografias = Fotografia.objects.filter(nome__icontains=nome_a_buscar).order_by("-data_fotografia")
+    		return render(request, "galeria/buscar.html", context={'cards': fotografias})
+
+    IMPORTANTE, usado nome__icontains, onde "nome" é o nome da variavel em banco com "__icontains", que vai buscar no contexto da palavra se existe semelhança nos nomes das fotos, como se fosse no SQL o ilike "%teste%".
+
+    E ele busca tudo primeiro antes de validar se tem buscar, assim se a busca vier string vazia, ele mostra tudo.
+
+    Melhorando o codigo por conta própria:
+    	def buscar(request):
+			if "buscar" in request.GET and request.GET['buscar']:
+				fotografias = Fotografia.objects.filter(nome__icontains=request.GET['buscar'], publicada=True).order_by("-data_fotografia")
+			else:
+				fotografias = Fotografia.objects.order_by("-data_fotografia").filter(publicada=True)
+    		return render(request, "galeria/buscar.html", context={'cards': fotografias})
+
+    Ele esqueceu de colocar publicada=True na busca por buscar.
+
+ Aula 18 - Autenticação e autorização
+
+ 	Colocando o campo de descrição que falta dentro de galeria/imagem.html
+
+ 		<p class="imagem__texto">{{ fotografia.descricao }}</p>
+
+ 	Mexendo no Autenticação e autorização dentro do ADMIN:
+
+ 		Clicando em USUARIOS, vemos que tem meu usuario e todas as infos dele.
+
+ 		Vamos add um novo usuario em ADICIONAR USUARIO +
+
+ 			teste 12345678aA!
+
+ 		Tem permissoes que pode colocar, como estar ATIVO, podendo mexer no sistema.
+ 		Membro da equipe, podendo acessar a parte de adm. SUper usuario, tem todas as permissoes sem perguntar, o que se nao quiser posso por as permissoes de add, mudar, deletar e visualizar para cada coisa que eu quiser para o usuario, até alterar tabelas do nosso banco, como galeria/fotografia.
+
+ 		GRUPOS DE USUARIOS -> criando um grupo, vc pode selecionar quais permissoes aquele grupo vai poder acessar!
+
+ 		Criando o grupo fotografia admin e dando permissao de CRUD para apenas para fotografia, indo no usuario teste e delegando o grupo pra ele, o usuario pertencerá aquele grupo apenas com aquelas permissoes, masssss vc pode tambem adicionar mais a ele se selecionar mais permissoes na tela dele!
+
+Observações:
+
+	Para possibilitar o upload de imagens, adicionamos o seguinte atributo no models.py de galeria:
+
+	foto_espaco = models.ImageField(upload_to='fotos/%d/%m/%Y/', blank=True)COPIAR CÓDIGO
+	
+	Porém, se adicionarmos esse atributo, o que será salvo no banco de dados?
+
+	A url com o caminho da foto.
