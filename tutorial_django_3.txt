@@ -271,7 +271,7 @@ DJANGO: Autenticacao de formularios e alerta
 		usuarios/forms.py
 
 	Dentro dele criamos uma classe chamada LoginForms herdando forms.Form de django.
-	Criamos a variavel nome_login, que será o nome do usuario, e a Label, é o que vem antes do input <label for="nome_login" style="color:#D9D9D9; margin-bottom: 5px;"><b>Nome de Login</b></label>. Necessário colocar este campo required=True e o tamanho maximo de 100 caracteres.
+	Criamos a variavel nome_login, que será o nome do usuario, e a Label, é o que vem antes do input <label for="nome_login" style="color:#D9D9D9; margin-bottom: 5px;"><b>Nome de Login</b></label>. Necessário colocar este campo (required=True) e o tamanho maximo de 100 caracteres.
 	Criamos outra variavel chamada senha, com os mesmos parametros da primeira mas o campo nao é charfield, e sim senha, entao colocamos no widget (permite a edição de algumas caracteristicas do input), add forms.PasswordInput()
 
 
@@ -323,6 +323,703 @@ DJANGO: Autenticacao de formularios e alerta
 
 5 - Estilizando formulário
 
-		Criando o botão de submit dentro da form criada em login:
+		Criando o botão de submit dentro da form criada em login e colocar estilo bootstrap nas divs anteriores da form:
 
 			templates/usuarios/login.html
+
+                <form action="" method="">
+                    {% csrf_token %}
+                    <div class="row">
+                        {% for field in form.visible_fields %}
+                            <div class="col-12 col-lg-12" style="margin-bottom: 10px;">
+                                <label style="color:#D9D9D9; margin-bottom: 5px;" for="{{ field.id_for_label }}">{{field.label}}</label>
+                                {{ field }}
+                            </div>
+                        {% endfor %}
+                        <div>
+                            <button class="btn btn-success col-12" style="padding: top 5px;" type="submit">Logar</button>
+                        </div>
+                    </div>
+                </form>
+
+        Ou seja, algumas estilizações do css se mantem no HTML.
+
+        Agora, a estilização dos inputs tem que ser no python, pois so chamamos no html por {{ field }}, colocaremos a class do css e o placeholder:
+
+        	usuarios/forms.py
+
+        		Para o input de nome:
+
+        			widget=forms.TextInput(
+			            attrs={
+			                "class": "form-control"
+			                "placeholder": "Ex.: João Silva"    
+			            }
+
+			    Para o input de senha:
+
+			    	widget=forms.PasswordInput(
+				            attrs={
+				                "class": "form-control"
+				                "placeholder": "Digite sua senha" 
+				            }
+				        )
+
+			Ficando:
+
+				from django import forms
+
+
+				class LoginForms(forms.Form):
+				    nome_login = forms.CharField(
+				        label='Nome de Login',
+				        required=True,
+				        max_length=100,
+				        widget=forms.TextInput(
+				            attrs={
+				                "class": "form-control",
+				                "placeholder": "Ex.: João Silva"
+				            }
+				        ))
+
+				    senha = forms.CharField(
+				        label='Senha',
+				        required=True,
+				        max_length=70,
+				        widget=forms.PasswordInput(
+				            attrs={
+				                "class": "form-control",
+				                "placeholder": "Digite sua senha"
+				            }
+				        ))
+
+
+6 - Formulários de cadastro
+
+	Agora, vamos alterar nosso formulário de cadastro.
+
+	Em forms.py de usuarios, add mais uma classe chamada CadastroForms, com os 4 inputs. Para email, o campo em vez de charfield vai ser EmailField e no widget forms.EmailInput:
+
+		usuarios/forms.py
+
+			class CadastroForms(forms.Form):
+		    nome_cadastro = forms.CharField(
+		        label='Nome de Cadastro',
+		        required=True,
+		        max_length=100,
+		        widget=forms.TextInput(
+		            attrs={
+		                "class": "form-control",
+		                "placeholder": "Ex.: João Silva"
+		            }
+		        ))
+
+		    email = forms.EmailField(
+		        label='E-mail',
+		        required=True,
+		        max_length=100,
+		        widget=forms.TextInput(
+		            attrs={
+		                "class": "form-control",
+		                "placeholder": "Ex.: joao.silva@xpto.com"
+		            }
+		        ))
+
+		    senha1 = forms.CharField(
+		        label='Senha',
+		        required=True,
+		        max_length=70,
+		        widget=forms.PasswordInput(
+		            attrs={
+		                "class": "form-control",
+		                "placeholder": "Digite sua senha"
+		            }
+		        ))
+
+		    senha2 = forms.CharField(
+		        label='Confirme sua senha',
+		        required=True,
+		        max_length=70,
+		        widget=forms.PasswordInput(
+		            attrs={
+		                "class": "form-control",
+		                "placeholder": "Digite sua senha"
+		            }
+		        ))
+
+	Na views.py de usuarios:
+
+		usuarios/views.py
+
+			from django.shortcuts import render
+			from usuarios.forms import LoginForms, CadastroForms
+
+			def login(request):
+			    form = LoginForms()
+			    return render(request, 'usuarios/login.html', {'form': form})
+
+			def cadastro(request):
+			    form = CadastroForms()
+			    return render(request, 'usuarios/cadastro.html', {'form': form})
+
+	Na tela de cadastro.html
+
+		templates/usuarios/cadastro.html
+
+			    <form action="" method="">
+                    {% csrf_token %}
+                    <div class="row">
+                        {% for field in form.visible_fields %}
+                            <div class="col-12 col-lg-12" style="margin-bottom: 10px;">
+                                <label style="color:#D9D9D9; margin-bottom: 5px;" for="{{ field.id_for_label }}">{{field.label}}</label>
+                                {{ field }}
+                            </div>
+                        {% endfor %}
+                        <div>
+                            <button class="btn btn-success col-12" style="padding: top 5px;" type="submit">Cadastrar</button>
+                        </div>
+                    </div>
+                </form>
+
+	CSRF - O Cross-Site Request Forgery ou CSRF é uma vulnerabilidade na segurança da web que possibilita que alguma ameaça se passe por clientes comuns. Assim, ela pode se disfarçar como o servidor e passar informações através do método POST. (Pode criar um formulario identico ao original, mas escondendo valores e na hora de submeter, e como a pessoa já está logada no site original, tem cookie, ele consegue o que quer, sem roubar a sessão, já está no chrome).
+
+	Uma maneira mais prática de entender isso é através de um exemplo:
+
+	Lucas está trabalhando em seu computador e se dá conta de que precisa transferir dinheiro de sua conta no banco. Ele passa por todo o processo de autenticação de usuário, acessa a sua conta no banco e faz a transferência necessária.
+
+	Em seguida, se lembra de que deve checar seus e-mails e acessa um e-mail de origem duvidosa, que aparentemente não o leva a lugar nenhum.
+
+	Contudo, poucos minutos depois ele recebe uma notificação informando que uma quantia exorbitante foi transferida de sua conta. Lucas havia sido roubado por um hacker mal intencionado através do uso do CSRF.
+
+	Vamos analisar o ocorrido passo a passo: primeiramente, Lucas acessa sua conta no banco e faz a transferência que precisa. Ao realizar essa ação, o navegador dele cria um session token que caracteriza seu acesso autenticado ao banco.
+
+	Depois Lucas acessa o e-mail de origem duvidosa que foi enviado pelo hacker e contém um link que ao simples acesso, permite utilizar o session token de Lucas. Dessa forma, é preenchido um formulário com informações de transferência bancária e o session token é usado para autenticá-lo e permitir que o método POST ocorra sem mais problemas.
+
+	A situação caracteriza a falta do uso do CSRF e aconteceu porque o servidor do banco não possui a proteção correta contra esse tipo de ataque.
+
+	Como vimos no curso, utilizamos um token próprio para impedir essa vulnerabilidade. chamado de CSRF Token. Ele consiste em uma série de caracteres aleatórios, gerados a cada formulário a ser preenchido pelo usuário que é enviado pelo servidor.
+
+	Após o recebimento pelo usuário, o token é checado novamente. O servidor só aceita o POST caso o CSRF Token se provar igual ao enviado inicialmente.
+
+	Diferentemente do session token e dos cookies, o CSRF Token não pode ser utilizado por um hacker mal intencionado.
+
+	Dessa forma, a existência do CSRF Token é crucial em todo formulário da web, para que o envio de formulários não seja forjado por terceiros.
+
+	Ele gera um input dentro do formulario:
+
+		<input type="hidden" name="csrfmiddlewaretoken" value="U86hQSvLPM9fbBY1AuxNTeztpjFWMfYR4HzFR6L8sbrjlNVOgTMe82OAIsmeEKRa">
+
+	Que na submissão bate com o que esta no servidor, entao o hacker nao consegue criar um novo formulario aleatorio, precisa do input.
+
+	SE AO INVES DE CRIAR O FORMS.PY E DEIXAR TUDO NO HTML, da pra so colocar {% csrf_token %} dentro da form e funciona. Mas nao sei ainda o que diferencia o emailField por exemplo.
+		
+
+7 - Usuários do Django
+
+		Ajustando segurança do form de login e cadastro, ele está GET, ou seja, aparece usuario e senha na URL. Colocamos entao method="POST".
+		E criaremos a action de login e cadastro:
+
+			login.html
+				<form action="{% url 'login' %}" method="POST">
+
+			cadastro.html
+				<form action="{% url 'cadastro' %}" method="POST">
+
+		Agora vamos em views.py de usuarios para mexer no def cadastro, porque se ter method POST, siginifica que a pessoa digitou e submeteu, colocaremos um if request.method == 'POST'. E o que facilita pegar os inputs e colocar na forms é isso, instanciamos o CadastroForms(request.POST) e ele vai direto para os campos certos com names. Validação da senha 1 e senha 2 devem ser iguais, se nao for, redirecionamos para fazer cadastro novamente (roda 'cadastro'), importando redirect:
+
+			from django.shortcuts import render, redirect
+			from usuarios.forms import LoginForms, CadastroForms
+
+			def login(request):
+			    form = LoginForms()
+			    return render(request, 'usuarios/login.html', {'form': form})
+
+			def cadastro(request):
+			    form = CadastroForms()
+
+			    if request.method == 'POST':
+			        form = CadastroForms(request.POST)
+
+			        if form["senha1"].value() != form['senha2'].value():
+			            return redirect('cadastro')
+
+			    return render(request, 'usuarios/cadastro.html', {'form': form})
+
+8 - Lógica de cadastro
+
+		Agora que realizamos a validação das senhas, podemos validar o formulário.
+		Para isso, podemos inserir um if form.is_valid() e, dentro do if, colocamos todas as informações que tornam o formulário válido.
+		O ideal seria que, a partir de agora, toda vez que formos utilizar alguma informação do formulário, isso seja feito dentro desse if. Ou seja, podemos inserir a validação de senhas dentro dele também:
+
+			usuarios/views.py
+
+				if form.is_valid():
+	            	if form["senha1"].value() != form['senha2'].value():
+	                	return redirect('cadastro')
+
+	    Depois disso, vamos passar as informações do formulário e passar para variaveis.
+
+			if form.is_valid():
+            	if form["senha1"].value() != form['senha2'].value():
+                	return redirect('cadastro')
+
+		    	nome = form["nome_cadastro"].value()
+		    	email = form["email"].value()
+		    	senha = form["senha1"].value()
+
+		Agora precisamos fazer mais uma validação, se já existe este usuario com este nome e email. Para isso, vamos importar a tabela users que ja existe no django, que ele cria antes de tudo, e da pra ver no ADMIN, e esta no sqlite.
+
+		 	from django.contrib.auth.models import User
+
+	 	E depois chamamos o User para fazer um SELECT por nome, que usuario nesta tabela esta como username, E O EXISTES para validar se existe, entao provavelmente retorna um Boolean. Se já tiver, da redirect.
+
+		 	if User.objects.filter(username=nome).exists():
+		 		return redirect('cadastro')
+
+		Se nao tiver, atribuimos a uma variavel a criação de um usuario "create_user", mas da pra criar tambem um super usuario "create_superuser", com as infos de nome, email e senha. E depois gravamos em banco com save().
+
+			usuario = User.objects.create_user(
+				username=nome,
+				email=email,
+				password=senha
+			)
+
+			usuario.save()
+
+		E redirecionamos para o login:
+
+			return redirect('login')
+
+		Codigo inteiro:
+
+			usuarios/views.py
+
+				from django.shortcuts import render, redirect
+				from usuarios.forms import LoginForms, CadastroForms
+				from django.contrib.auth.models import User
+
+				def login(request):
+				    form = LoginForms()
+				    return render(request, 'usuarios/login.html', {'form': form})
+
+				def cadastro(request):
+				    form = CadastroForms()
+
+				    if request.method == 'POST':
+				        form = CadastroForms(request.POST)
+
+				        if form.is_valid():
+				            if form["senha1"].value() != form['senha2'].value():
+				                return redirect('cadastro')
+
+				            nome = form["nome_cadastro"].value()
+				            email = form["email"].value()
+				            senha = form["senha1"].value()
+
+				            if User.objects.filter(username=nome).exists():
+				                return redirect('cadastro')
+
+				            usuario = User.objects.create_user(
+				                username=nome,
+				                email=email,
+				                password=senha
+				            )
+
+				            usuario.save()
+
+				            return redirect('login')
+
+				    return render(request, 'usuarios/cadastro.html', {'form': form})
+
+
+9 - Lógica de login
+
+		Validação no login:
+		Primeiro, validando se foi feito o POST, depois validando se a form veio certa e puxando as infos:
+
+			usuarios/views.py
+
+				def login(request):
+				    form = LoginForms()
+				    if request.method == 'POST':
+				        form = LoginForms(request.POST)
+
+				        if form.is_valid():
+				            nome = form['nome_login'].value()
+				            senha = form['senha'].value()
+			
+
+		Validando usuario e senha, se estão corretos, o proprio django ja tem a validação, inportamos ela com o auth:
+
+			from django.contrib import auth
+
+		E usando o authenticate, tendo que passar o parametro request tambem:
+
+			    usuario = auth.authenticate(
+			    	request,
+                    username=nome,
+                    password=senha
+                )
+
+        O retorno disso não pode ser None para ser valido. Se valido, fazemos o login do usuario e redirecionamos oara o index. caso contrario volta a tela de login:
+
+        		if usuario is not None:
+        			auth.login(request, usuario)
+        			return redirect('index')
+        	    else:
+                	return redirect('login')
+
+        Resultado final:
+
+        	from django.shortcuts import render, redirect
+			from usuarios.forms import LoginForms, CadastroForms
+			from django.contrib.auth.models import User
+			from django.contrib import auth
+
+			def login(request):
+			    form = LoginForms()
+
+			    if request.method == 'POST':
+			        form = LoginForms(request.POST)
+
+			        if form.is_valid():
+			            nome = form['nome_login'].value()
+			            senha = form['senha'].value()
+
+			            usuario = auth.authenticate(
+			                request,
+			                username=nome,
+			                password=senha
+			            )
+
+			            if usuario is not None:
+			                auth.login(request, usuario)
+			                return redirect('index')
+			            else:
+			                return redirect('login')
+
+			    return render(request, 'usuarios/login.html', {'form': form})
+
+			def cadastro(request):
+			    form = CadastroForms()
+
+			    if request.method == 'POST':
+			        form = CadastroForms(request.POST)
+
+			        if form.is_valid():
+			            if form["senha1"].value() != form['senha2'].value():
+			                return redirect('cadastro')
+
+			            nome = form["nome_cadastro"].value()
+			            email = form["email"].value()
+			            senha = form["senha1"].value()
+
+			            if User.objects.filter(username=nome).exists():
+			                return redirect('cadastro')
+
+			            usuario = User.objects.create_user(
+			                username=nome,
+			                email=email,
+			                password=senha
+			            )
+
+			            usuario.save()
+
+			            return redirect('login')
+
+			    return render(request, 'usuarios/cadastro.html', {'form': form})
+
+10 - Alertas e mensagens
+
+		Vamos colocar alertas com os erros possiveis, para mostrar para o usuario o que aconteceu, pois o cadastro por exemplo, se errar as duas senhas, nao aparece nada informando.
+
+		Em views.py de usuarios, vamos importar a biblioteca messages:
+
+			from django.contrib import auth, messages
+
+		No login que deu certo, vamos colocar que o Usuario foi logado com sucesso, antes de direcionar. E no erro ao login, tambem:
+
+			if usuario is not None:
+                auth.login(request, usuario)
+                messages.success(request, 'Usuário Logado com Sucesso!')
+                return redirect('index')
+            else:
+                messages.error(request, 'Erro ao efetuar login!')
+                return redirect('login')
+
+        Da mesma forma no cadastro, vamos colocar as mensagens para senhas nao bateram, usuario existente e usuario criado com sucesso!
+
+	            if request.method == 'POST':
+		        form = CadastroForms(request.POST)
+
+		        if form.is_valid():
+		            if form["senha1"].value() != form['senha2'].value():
+		                messages.error(request, 'Senhas não conferem!')
+		                return redirect('cadastro')
+
+		            nome = form["nome_cadastro"].value()
+		            email = form["email"].value()
+		            senha = form["senha1"].value()
+
+		            if User.objects.filter(username=nome).exists():
+		                messages.error(request, 'Usuário já existe!')
+		                return redirect('cadastro')
+
+		            usuario = User.objects.create_user(
+		                username=nome,
+		                email=email,
+		                password=senha
+		            )
+
+		            usuario.save()
+
+		            messages.success(request, 'Usuário criado com Sucesso!')
+		            return redirect('login')
+
+		Ficando:
+			usuarios/views.py
+
+				from django.shortcuts import render, redirect
+				from usuarios.forms import LoginForms, CadastroForms
+				from django.contrib.auth.models import User
+				from django.contrib import auth, messages
+
+				def login(request):
+				    form = LoginForms()
+
+				    if request.method == 'POST':
+				        form = LoginForms(request.POST)
+
+				        if form.is_valid():
+				            nome = form['nome_login'].value()
+				            senha = form['senha'].value()
+
+				            usuario = auth.authenticate(
+				                request,
+				                username=nome,
+				                password=senha
+				            )
+
+				            if usuario is not None:
+				                auth.login(request, usuario)
+				                messages.success(request, 'Usuário Logado com Sucesso!')
+				                return redirect('index')
+				            else:
+				                messages.error(request, 'Erro ao efetuar login!')
+				                return redirect('login')
+
+				    return render(request, 'usuarios/login.html', {'form': form})
+
+				def cadastro(request):
+				    form = CadastroForms()
+
+				    if request.method == 'POST':
+				        form = CadastroForms(request.POST)
+
+				        if form.is_valid():
+				            if form["senha1"].value() != form['senha2'].value():
+				                messages.error(request, 'Senhas não conferem!')
+				                return redirect('cadastro')
+
+				            nome = form["nome_cadastro"].value()
+				            email = form["email"].value()
+				            senha = form["senha1"].value()
+
+				            if User.objects.filter(username=nome).exists():
+				                messages.error(request, 'Usuário já existe!')
+				                return redirect('cadastro')
+
+				            usuario = User.objects.create_user(
+				                username=nome,
+				                email=email,
+				                password=senha
+				            )
+
+				            usuario.save()
+
+				            messages.success(request, 'Usuário criado com Sucesso!')
+				            return redirect('login')
+
+				    return render(request, 'usuarios/cadastro.html', {'form': form})
+
+
+
+		Mas não é só isso, precisamos ir nos templates para mostrar onde vão aparecer as mensagens:
+
+			templates/usuarios/login.html
+			templates/usuarios/cadastro.html
+           	templates/galeria/partials/_menu.html
+
+            	<img src="{% static '/assets/logo/Logo(2).png' %}" alt="Logo da Alura Space" />
+
+				{% for message in messages %}
+					<div class="alert alert-primary">
+						<p id="messages">{{message}}</p>
+					</div>
+				{% endfor %}
+
+            	<div class="cabecalho__busca">
+
+       	E templates/galeria/partials/base.html falta bootstrap para pegar a classe da div:
+
+       		 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+
+11 - Logout
+
+	Criando uma nova rota em views.py de usuarios. E é bem simples, usamos auth.logout para deslogar.
+	Podemos colocar uma mensagem falando que foi deslogado e redirecionamos para o login:
+
+		def logout(request):
+			messages.success(request, 'Usuário deslogado!')
+			auth.logout(request)
+			return redirect('login')
+
+	Criamos o path em urls.py de usuarios:
+
+		from django.urls import path
+		from usuarios.views import login, cadastro, logout
+
+		urlpatterns = [
+		    path('login', login, name="login"),
+		    path('cadastro', cadastro, name="cadastro"),
+		    path('logout', logout, name="logout")
+		]
+
+	E nos templates, vamos alterar surpreenda-me para ser logout:
+
+		templates/usuarios/login.html
+		templates/usuarios/cadastro.html
+       	templates/galeria/partials/_menu.html
+
+			<a href="{% url 'logout' %}"><img src="{% static '/assets/ícones/1x/Surpreenda-me - inativo.png' %}"> Logout</a>
+
+
+	Geralmente, após realizarmos o login em alguma aplicação, a exibição do menu de navegação é alterada. Por exemplo, alguns links de navegação ficam disponíveis e visíveis.
+
+	Alternativa correta
+
+	É possível verificar em um template se o usuário está logado com o código {% if user.is_authenticated %}.
+
+	Com esse código, verificamos se o usuário está logado.
+
+
+12 - Refatoração e validação
+	
+		Vamos fazer o login na nossa plataforma, com o usuário "Lucas". A visualização dos cards ficou fora de formatação, porque usamos a referência do Bootstrap no index.
+
+		O Bootstrap tem algumas classes básicas que entram em conflito com o arquivo de stylesheet. Se acessarmos "setup > static > styles > style.css", encontraremos algumas classes que entram em conflito com classes já definidas no arquivo de CSS.
+
+		Vamos acessar o arquivo do Bootstrap em "templates > galeria > base.html". Vamos copiar a referência e levá-la para o navegador.
+
+		Vamos ao inves de importar o BOOTSTRAP, vamos copiar o codigo CSS dele, que ele cria e colocar no style do HTML, para assim nao dar conflito!
+
+		Indo no chrome, indo em especionar elemento, no elemento da div da mensagem, do alert, e vai no style:
+
+			.alert-primary {
+			    --bs-alert-color: #084298;
+			    --bs-alert-bg: #cfe2ff;
+			    --bs-alert-border-color: #b6d4fe;
+			}
+			.alert {
+			    --bs-alert-bg: transparent;
+			    --bs-alert-padding-x: 1rem;
+			    --bs-alert-padding-y: 1rem;
+			    --bs-alert-margin-bottom: 1rem;
+			    --bs-alert-color: inherit;
+			    --bs-alert-border-color: transparent;
+			    --bs-alert-border: 1px solid var(--bs-alert-border-color);
+			    --bs-alert-border-radius: 0.375rem;
+			    position: relative;
+			    padding: var(--bs-alert-padding-y) var(--bs-alert-padding-x);
+			    margin-bottom: var(--bs-alert-margin-bottom);
+			    color: var(--bs-alert-color);
+			    background-color: var(--bs-alert-bg);
+			    border: var(--bs-alert-border);
+			    border-radius: var(--bs-alert-border-radius);
+			}
+
+		E no setup/static/styles/style.css colamos.
+		Só que tem que ser invertivo no style.css, o alert-primary deve ir depois do alert. a ordem importa no css
+
+			.alert {
+			    --bs-alert-bg: transparent;
+			    --bs-alert-padding-x: 1rem;
+			    --bs-alert-padding-y: 1rem;
+			    --bs-alert-margin-bottom: 1rem;
+			    --bs-alert-color: inherit;
+			    --bs-alert-border-color: transparent;
+			    --bs-alert-border: 1px solid var(--bs-alert-border-color);
+			    --bs-alert-border-radius: 0.375rem;
+			    position: relative;
+			    padding: var(--bs-alert-padding-y) var(--bs-alert-padding-x);
+			    margin-bottom: var(--bs-alert-margin-bottom);
+			    color: var(--bs-alert-color);
+			    background-color: var(--bs-alert-bg);
+			    border: var(--bs-alert-border);
+			    border-radius: var(--bs-alert-border-radius);
+			}
+			.alert-primary {
+			    --bs-alert-color: #084298;
+			    --bs-alert-bg: #cfe2ff;
+			    --bs-alert-border-color: #b6d4fe;
+			}
+
+		Removemos a chamada do bootstrap do "templates > galeria > base.html".
+
+		E Pronto! ele ja atualiza no style.css do static, nao precisando migrar.
+		Dando F5, ele ja funciona.
+
+		Agora, Vamos instaurar uma regra de negócios que só libere a visualização da plataforma para as pessoas que estiverem logadas. As pessoas que não estiverem logadas serão redirecionadas para a página de login.
+
+		Em galeria/views.py vamos validar a autenticação do usuario:
+		se estiver logada, deixa ver a pagina, se nao volta pro login:
+
+			if not request.user.is_authenticated:
+				return redirect('login')
+
+		vamos usar esta condição em index, buscar e imagem.
+
+		Para melhorar, vamos mandar uma mensagem de erro, importando o message e o redirect:
+
+			from django.shortcuts import render, get_object_or_404, redirect
+			from django.contrib import redirect, messages
+
+			if not request.user.is_authenticated:
+				messages.error(request, "Usuario não logado!")
+				return redirect('login')
+
+		FICANDO:
+
+			galeria/views.py
+
+				from django.shortcuts import render, get_object_or_404, redirect
+				from galeria.models import Fotografia
+				from django.contrib import messages
+
+				def index(request):
+				    # request, template_name, context=None, content_type=None, status=None, using=None
+				    if not request.user.is_authenticated:
+				        messages.error(request, "Usuario não logado!")
+				        return redirect('login')
+
+				    fotografias = Fotografia.objects.order_by("-data_fotografia").filter(publicada=True)
+				    return render(request, 'galeria/index.html', context={'cards': fotografias})
+
+				def imagem(request, foto_id):
+				    if not request.user.is_authenticated:
+				        messages.error(request, "Usuario não logado!")
+				        return redirect('login')
+
+				    fotografia = get_object_or_404(Fotografia, pk=foto_id)
+				    return render(request, 'galeria/imagem.html', {'fotografia': fotografia})
+
+				def buscar(request):
+				    if not request.user.is_authenticated:
+				        messages.error(request, "Usuario não logado!")
+				        return redirect('login')
+
+				    if "buscar" in request.GET and request.GET['buscar']:
+				        fotografias = Fotografia.objects.filter(nome__icontains=request.GET['buscar'], publicada=True).order_by("-data_fotografia")
+				    else:
+				        fotografias = Fotografia.objects.order_by("-data_fotografia").filter(publicada=True)
+				    return render(request, "galeria/buscar.html", context={'cards': fotografias})
