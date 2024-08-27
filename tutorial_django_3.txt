@@ -1023,3 +1023,252 @@ DJANGO: Autenticacao de formularios e alerta
 				    else:
 				        fotografias = Fotografia.objects.order_by("-data_fotografia").filter(publicada=True)
 				    return render(request, "galeria/buscar.html", context={'cards': fotografias})
+
+
+13 - Associando tabelas
+
+	Vamos agora associar cada imagem que subimos no servidor a um usuario.
+
+	Vamos em galeria/models.py para adicionar a coluna do id_usuario.
+	Vamos importar o user, e adicionar o novo campo como foreign key.
+	o on delete serve para que quando excluimos um usuario, aquela fotografia que era dele passa a ter o campo do id Nulo para usuario. Com isso, o ato dele ser nulo pode, o campo pode ser nulo se o usuario for apagado, null=True. Adiciona tambem o blank como false (nao pode ser string vazia). Por fim, related_name="user", para facilitar a localização de tabelas e funcionalidades.
+
+		galeria/models.py
+
+			from django.contrib.auth.models import User
+
+			...
+
+				usuario = models.ForeignKey(
+					to=User,
+					on_delete=models.SET_NULL,
+					null=True,
+					blank=False,
+					related_name="user"
+				)
+
+		Ficando:
+
+			from django.db import models
+			from datetime import datetime
+			from django.contrib.auth.models import User
+
+			class Fotografia(models.Model):
+			    # Colunas:
+
+			    OPCOES_CATEGORIA = [
+			        ("NEBULOSA", "Nebulosa"),
+			        ("ESTRELA", "Estrela"),
+			        ("GALÁXIA", "Galáxia"),
+			        ("PLANETA", "Planeta")
+			    ]
+
+			    # CharField -> String;
+			    # max_length maximo de char.
+			    # null=False nao pode ser nulo.
+			    # blank=False nao pode ser string vazia!
+			    nome = models.CharField(max_length=100, null=False, blank=False)
+			    legenda = models.CharField(max_length=150, null=False, blank=False)
+			    # TextField -> campo de texto
+			    descricao = models.TextField(null=False, blank=False)
+			    foto = models.ImageField(upload_to="foto/%Y/%m/%d/", blank=True)
+			    categoria = models.CharField(max_length=150, choices=OPCOES_CATEGORIA, default='')
+			    publicada = models.BooleanField(default=False)
+			    data_fotografia = models.DateTimeField(default=datetime.now, blank=False)
+			    usuario = models.ForeignKey(
+			        to=User,
+			        on_delete=models.SET_NULL,
+			        null=True,
+			        blank=False,
+			        related_name="user"
+			    )
+
+
+			    def __str__(self):
+			        # Boa pratica, devolve o nome de cada um dos itens.
+			        return self.nome
+
+	Fazendo a migração:
+
+		python3 manage.py makemigrations
+		python3 manage.py migrate
+
+	Agora entrando no Admin, podemos ver que ao clicar numa foto, tem o usuario para selecionar!
+
+	Add filtro por usuario em galeria/admin.py
+
+		list_filter = ("categoria", "usuario",)
+
+
+14 - Validação clean
+		
+		Agora vamos criar um novo usuário. O "Nome de Cadastro" será "Carol Silva". Seu "Email" será "csilva@xpyto.com".
+
+		Como "Senha", vamos passar "123". Em todos esses campos, poderíamos passar quaisquer dados, mas esses foram os utilizados pelo instrutor. Para criar, basta clicar em "Cadastrar".
+
+		Na administração do Django, ao atualizarmos a página, veremos o novo usuário. Vamos trabalhar, a partir de agora, com a ideia de que o nome de usuário não tenha espaços em branco.
+
+		Vamos em usuarios/forms.py para trabalhar validacao no CadastroForms, dentro da class vamos adicionar um metodo para fazer a validação do nome.
+		E o nome deve ser neste formato "clean_" + variavel, pois é assim que o DJANGO vai entender que é uma validação. self.cleaned_data.get('nome_cadastro') pegará as informações de nome cadastro atribuidas em self. Se existir conteudo em nome (if nome), vamos dar um strip para limpar espacos vazios no fim e no começo. Se tivermos espaço entre os nomes, tem que aparecer uma mensagem de erro, se não retorna o nome certo, validado.
+
+			usuarios/forms.py
+
+				def clean_nome_cadastro(self):
+					nome = self.cleaned_data.get('nome_cadastro')
+
+					if nome:
+						nome  = nome.strip()
+						if " " in nome:
+							raise forms.ValidationError("Não é possível inserir espaços dentro do campo usuário")
+						else:
+							return nome
+
+		Com esta validação, ele ja bloqueia no cadastro mas nao aparece a mensagem de erro.
+
+
+15 - Mensagens de Erro
+
+		Vamos agora fazer aparecer o erro feito no clean_nome_cadastro, dentro do templates/usuarios/cadastro.html. Vamos no for referente a form de cadastro, pois queremos que apareça a mensagem de erro para cada campo! Então vamos criar um outro for dentro do for principal, com os erros de field.errors. Criaremos dentro dele uma div com o erro:
+
+			templates/usuarios/cadastro.html
+
+			       	{% for field in form.visible_fields %}
+	                    <div class="col-12 col-lg-12" style="margin-bottom: 10px;">
+	                        <label style="color:#D9D9D9; margin-bottom: 5px;" for="{{ field.id_for_label }}">{{field.label}}</label>
+	                        {{ field }}
+	                    </div>
+
+	                    CODIGO FICARÁ AQUI
+
+	                {% endfor %}
+
+	            Novo for:
+
+	            	{% for error in field.errors%}
+	            		<div>
+	            			<span style="color:red;">{{ error }}</span>
+	            		</div>
+	            	{% endfor %}
+
+	    No teste, o email estava invalido, "123", e apareceu a mensagem de erro:
+
+	    	Informe um endereço de email válido.
+
+	    E nao codei este erro, o que significa que no proprio DJango já deu raise no email invalido!
+
+	    Agora com o nome com espaço, "123 123", ele mostrou o erro:
+
+	    	Não é possível inserir espaços dentro do campo usuário
+
+	    Se deixarmos os dois campos com erros, os dois erros vão aparecer!
+
+	    Vamos criar validação da senhas no forms, tirando da views:
+
+	    	Na usuarios/views.py removemos:
+
+	    	    if form["senha1"].value() != form['senha2'].value():
+                	messages.error(request, 'Senhas não conferem!')
+                	return redirect('cadastro')
+
+            E criamos em, a senha dois que deve bater com a primeira, colocando uma condição a mais se as duas senhas existem (if senha_1 and senha_2):
+
+            	usuarios/forms.py
+
+            		def clean_senha2(self):
+            			senha_1 = self.cleaned_data.get('senha1')
+            			senha_2 = self.cleaned_data.get('senha2')
+            			if senha_1 and senha_2:
+	            		    if senha_2 != senha_1:
+	                			raise forms.ValidationError('Senhas não conferem!')
+	                		else:
+	                			return senha_2
+
+	    Assim, aparece a mensagem de erro.
+
+
+16 -  Partial para alertas
+
+		Como está duplicado o codigo para alerta em index.html e cadastro.html de usuarios, vamos criar um partials em galeria para remover a duplicação:
+
+			templates/galeria/partials/_alertas.html
+
+				{% if messages %}
+					{% for message in messages %}
+		                <div class="alert alert-primary">
+		                    {{message}}
+		                </div>
+		            {% endfor %}
+		        {% endif %}
+
+		Agora, vamos remover o codigo de index.html e cadastro.html de usuarios e colocar o direcionamento para este _alert.html:
+
+			templates/usuarios/index.html
+			templates/usuarios/cadastro.html
+
+				{% include 'galeria/partials/_alertas.html' %}
+
+		MANIPULANDO OS ALERTAS, até agora os alertas são fixos, cor azul para qualquer alerta, tanto de erro quanto de sucesso (alert-primary). Vamos usar uma funcionalidade do django que conseguimos manipular atributos da mensagem, mudando a class da div.
+
+			https://docs.djangoproject.com/en/4.1/ref/contrib/messages/
+
+		No nosso settings.py de setup, podemos pegar o codigo da documentação e colar nele.
+
+			from django.contrib.messages import constants as messages
+			MESSAGE_TAGS = {
+			    messages.INFO: '',
+			    50: 'critical',
+			}
+
+		Mas vamos manipular as tags:
+
+			setup/settings.py
+
+				# messages
+				from django.contrib.messages import constants as messages
+				MESSAGE_TAGS = {
+				    messages.ERROR: 'danger',
+				    messages.SUCCESS: 'success'
+				}
+
+		Lembrando que quando for erro, a class deve ter alert-danger para puxar do bootstrap, e no sucess alert-sucess
+
+		Na partials/_alertas.html
+
+			templates/galeria/partials/_alertas.html
+
+				<div class="alert alert-{{ message.tags }}">
+
+		E ele vai puxar a tag correta pois dentro da views de usuarios estamos especificando que messages.error(request, 'Erro ao efetuar login!') e messages.success(request, 'Usuário Logado com Sucesso!')
+
+		Com isso, testando no site o login, ela funciona, mas o css nao ficou legal.
+
+		Mudamos a ordem do style sheets nos templates pois um ta passando por cima do outro. Voltando ao arquivo "login.html", estamos usando um stylesheet de bootstrap antes do stylesheet personalizado, devemos mudar a ordem:
+
+			<link rel="stylesheet" href="{% static '/styles/style.css' %}">
+    		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+
+    	E pronto!
+
+
+17 - Reorganizando diretórios
+		
+		Pasta de _partials fora de galeria, deve ser para uso geral e nao só para galeria. Criamos entao a partials em templates, já com tudo que tem nele.
+
+			templates/partials
+
+		Com isso, quebrou os caminhos que puxam partials de galeria, vamos ajustar:
+
+			templates/usuarios/login.html
+			templates/usuarios/cadastro.html
+
+				{% include 'partials/_alertas.html' %}
+
+			templates/galeria/base.html
+
+				{% include 'partials/_menu.html' %}
+    			{% block content %}{% endblock %}
+    			{% include 'partials/_footer.html' %}
+
+    	Podemos tambem codigos comuns nos arquivos e o professor propoem um desafio para fazermos por conta em todos os casos.
+
+Conclusão, PARABENS!

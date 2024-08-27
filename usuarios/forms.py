@@ -68,3 +68,22 @@ class CadastroForms(forms.Form):
                 "placeholder": "Digite sua senha"
             }
         ))
+
+    def clean_nome_cadastro(self):
+        nome = self.cleaned_data.get('nome_cadastro')
+
+        if nome:
+            nome = nome.strip()
+            if " " in nome:
+                raise forms.ValidationError("Não é possível inserir espaços dentro do campo usuário")
+            else:
+                return nome
+
+    def clean_senha2(self):
+        senha_1 = self.cleaned_data.get('senha1')
+        senha_2 = self.cleaned_data.get('senha2')
+        if senha_1 and senha_2:
+            if senha_2 != senha_1:
+                raise forms.ValidationError('Senhas não conferem!')
+            else:
+                return senha_2
